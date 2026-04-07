@@ -20,9 +20,18 @@ source .venv/bin/activate
 echo "→ Verificando dependencias..."
 uv pip install -q fastapi uvicorn sqlalchemy aiohttp "sentence-transformers>=3.1" numpy apscheduler python-dotenv python-multipart
 
-# API Key Anthropic (opcional, para análisis IA futuro)
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-  echo "⚠  ANTHROPIC_API_KEY no definida (opcional para esta versión)"
+# Cargar .env si existe
+if [ -f ".env" ]; then
+  export $(grep -v '^#' .env | xargs)
+  echo "→ Variables cargadas desde .env"
+fi
+
+# Validar ticket ChileCompra
+if [ -z "$CHILECOMPRA_TICKET" ]; then
+  echo "⚠  CHILECOMPRA_TICKET no definido."
+  echo "   Copia .env.example a .env y agrega tu ticket."
+  echo "   Obtener ticket en: https://api.mercadopublico.cl/modules/IniciarSesion.aspx"
+  exit 1
 fi
 
 echo ""

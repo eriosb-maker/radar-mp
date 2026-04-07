@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CHILECOMPRA_TICKET = os.getenv("CHILECOMPRA_TICKET", "0F6A6527-FFF9-4907-9622-EC72A4C73E9B")
+CHILECOMPRA_TICKET = os.getenv("CHILECOMPRA_TICKET", "")
 ANTHROPIC_API_KEY  = os.getenv("ANTHROPIC_API_KEY", "")
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./radar_mp.db")
