@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radar — Mercado Público</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <span class="logo-icon">◈</span>
+    <div>
+      <div class="logo-title">Radar MP</div>
+      <div class="logo-sub">Mercado Público</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="#" class="nav-item active" data-view="dashboard">
+      <span class="nav-icon">▦</span> Dashboard
+    </a>
+    <a href="#" class="nav-item" data-view="oportunidades">
+      <span class="nav-icon">◎</span> Oportunidades
+    </a>
+    <a href="#" class="nav-item" data-view="licitaciones">
+      <span class="nav-icon">☰</span> Licitaciones
+    </a>
+    <a href="#" class="nav-item" data-view="perfil">
+      <span class="nav-icon">◉</span> Mi Perfil
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="rut-badge" id="rut-badge">Sin sesión</div>
+    <div class="version">v1.0.0</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ── DASHBOARD ── -->
+  <section id="view-dashboard" class="view active">
+    <header class="page-header">
+      <h1>Dashboard</h1>
+      <button class="btn-primary" id="btn-forzar-ingesta">↻ Actualizar ahora</button>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Licitaciones activas</div>
+        <div class="stat-value" id="stat-activas">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total indexadas</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Proveedores</div>
+        <div class="stat-value" id="stat-proveedores">—</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-label">Oportunidades hoy</div>
+        <div class="stat-value" id="stat-oport">—</div>
+      </div>
+    </div>
+
+    <div class="section-title">Tus mejores oportunidades</div>
+    <div id="top-oportunidades" class="oport-list">
+      <div class="empty-state">Registra tu perfil para ver oportunidades.</div>
+    </div>
+  </section>
+
+  <!-- ── OPORTUNIDADES ── -->
+  <section id="view-oportunidades" class="view">
+    <header class="page-header">
+      <h1>Oportunidades</h1>
+      <div class="filter-row">
+        <label>Score mínimo
+          <input type="range" id="score-filter" min="40" max="95" value="40" />
+          <span id="score-val">40</span>
+        </label>
+      </div>
+    </header>
+    <div id="lista-oportunidades" class="oport-list">
+      <div class="empty-state">Registra tu perfil para ver oportunidades.</div>
+    </div>
+  </section>
+
+  <!-- ── LICITACIONES ── -->
+  <section id="view-licitaciones" class="view">
+    <header class="page-header">
+      <h1>Licitaciones</h1>
+      <input type="text" id="search-organismo" class="input-search" placeholder="Filtrar por organismo…" />
+    </header>
+    <div class="table-wrap">
+      <table class="tabla" id="tabla-licitaciones">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Organismo</th>
+            <th>Región</th>
+            <th>Monto estimado</th>
+            <th>Cierre</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-licitaciones">
+          <tr><td colspan="7" class="loading">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <button id="btn-prev" class="btn-secondary" disabled>← Anterior</button>
+      <span id="pag-info">Página 1</span>
+      <button id="btn-next" class="btn-secondary">Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- ── PERFIL ── -->
+  <section id="view-perfil" class="view">
+    <header class="page-header">
+      <h1>Mi Perfil</h1>
+    </header>
+
+    <div class="form-card">
+      <h2 class="form-title">Registro / Actualización</h2>
+      <p class="form-desc">
+        Define tu perfil para que el motor de matching encuentre licitaciones relevantes para ti.
+      </p>
+
+      <form id="form-perfil">
+        <div class="form-row">
+          <div class="form-group">
+            <label>RUT empresa <span class="req">*</span></label>
+            <input type="text" id="f-rut" placeholder="76.543.210-K" required />
+          </div>
+          <div class="form-group">
+            <label>Nombre empresa <span class="req">*</span></label>
+            <input type="text" id="f-nombre" placeholder="Mi Empresa Ltda." required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email para alertas <span class="req">*</span></label>
+          <input type="email" id="f-email" placeholder="contacto@miempresa.cl" required />
+        </div>
+
+        <div class="form-group">
+          <label>Rubros / Especialidades <span class="req">*</span></label>
+          <textarea id="f-rubros" rows="3"
+            placeholder="Ej: construcción, mantención de edificios, pintura, instalaciones eléctricas, plomería"></textarea>
+          <div class="form-hint">
+            Describe con palabras clave lo que hace tu empresa. Cuanto más detallado, mejor el matching.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Regiones de interés</label>
+          <div class="checkbox-grid" id="check-regiones">
+            <!-- generado por JS -->
+          </div>
+          <div class="form-hint">Vacío = todas las regiones</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Monto mínimo (CLP)</label>
+            <input type="number" id="f-monto-min" placeholder="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Monto máximo (CLP)</label>
+            <input type="number" id="f-monto-max" placeholder="Sin límite" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Guardar perfil</button>
+          <button type="button" class="btn-secondary" id="btn-cargar-perfil">Cargar perfil existente</button>
+        </div>
+        <div id="form-msg" class="form-msg"></div>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<!-- MODAL DETALLE LICITACIÓN -->
+<div id="modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

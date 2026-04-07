@@ -1,0 +1,29 @@
+# Entorno virtual
+.venv/
+
+# Base de datos local
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Logs
+*.log
+nohup.out
+
+# Variables de entorno
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
