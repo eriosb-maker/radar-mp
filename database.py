@@ -88,6 +88,24 @@ class Oportunidad(Base):
         return {}
 
 
+class InformeDD(Base):
+    """Caché de informes de due diligence (evita re-consultar la API para el mismo RUT)."""
+    __tablename__ = "informes_dd"
+
+    id          = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    rut         = Column(String, unique=True, index=True)
+    nombre      = Column(String)
+    resultado   = Column(Text)   # JSON completo del informe
+    created_at  = Column(DateTime, default=datetime.utcnow)
+    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def get_resultado(self) -> dict:
+        return json.loads(self.resultado) if self.resultado else {}
+
+    def set_resultado(self, data: dict):
+        self.resultado = json.dumps(data, ensure_ascii=False, default=str)
+
+
 def get_db():
     db = SessionLocal()
     try:
@@ -98,3 +116,11 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+
+    # Migración: actualizar estados vacíos de licitaciones ya ingresadas
+    with SessionLocal() as db:
+        try:
+            db.query(Licitacion).filter(Licitacion.estado == "").update({"estado": "activa"})
+            db.commit()
+        except Exception:
+            db.rollback()

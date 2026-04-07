@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from fastapi.responses import Response
 
 from config import POLL_INTERVAL_MINUTOS
-from database import Licitacion, Oportunidad, Proveedor, get_db, init_db
+from database import InformeDD, Licitacion, Oportunidad, Proveedor, get_db, init_db
 from due_diligence import due_diligence_completo
 from ingesta import ciclo_completo
 from notifier import enviar_alertas
@@ -336,30 +336,61 @@ async def dd_page():
 
 
 @app.get("/api/dd/{rut}")
-async def due_diligence_json(rut: str):
+async def due_diligence_json(rut: str, forzar: bool = False, db: Session = Depends(get_db)):
     """
     Genera el informe de due diligence completo para un RUT.
-    Puede tardar 30-60 segundos (descarga datos + análisis Claude).
+    Usa caché (24h) para evitar re-consultar la API. Usa ?forzar=true para regenerar.
+    Puede tardar 30-90 segundos la primera vez.
     """
+    from datetime import timedelta
+
+    # Verificar caché
+    if not forzar:
+        cached = db.query(InformeDD).filter(InformeDD.rut == rut).first()
+        if cached:
+            edad = datetime.utcnow() - cached.updated_at
+            if edad < timedelta(hours=24):
+                log.info("DD cache hit para %s (edad: %s)", rut, edad)
+                return cached.get_resultado()
+
     try:
         informe = await due_diligence_completo(rut)
-        return informe
     except ValueError as e:
         raise HTTPException(404, str(e))
     except Exception as e:
         log.error("Error en DD para %s: %s", rut, e)
         raise HTTPException(500, f"Error generando informe: {e}")
 
+    # Guardar en caché
+    cached = db.query(InformeDD).filter(InformeDD.rut == rut).first()
+    if cached:
+        cached.set_resultado(informe)
+        cached.nombre     = informe["proveedor"]["nombre"]
+        cached.updated_at = datetime.utcnow()
+    else:
+        nuevo = InformeDD(rut=rut, nombre=informe["proveedor"]["nombre"])
+        nuevo.set_resultado(informe)
+        db.add(nuevo)
+    db.commit()
+
+    return informe
+
 
 @app.get("/api/dd/{rut}/docx")
-async def due_diligence_docx(rut: str):
-    """Genera y descarga el informe en formato DOCX."""
-    try:
-        informe = await due_diligence_completo(rut)
-    except ValueError as e:
-        raise HTTPException(404, str(e))
-    except Exception as e:
-        raise HTTPException(500, str(e))
+async def due_diligence_docx(rut: str, db: Session = Depends(get_db)):
+    """Genera y descarga el informe en DOCX. Usa caché si existe."""
+    from datetime import timedelta
+
+    cached = db.query(InformeDD).filter(InformeDD.rut == rut).first()
+    if cached and (datetime.utcnow() - cached.updated_at) < timedelta(hours=24):
+        informe = cached.get_resultado()
+    else:
+        try:
+            informe = await due_diligence_completo(rut)
+        except ValueError as e:
+            raise HTTPException(404, str(e))
+        except Exception as e:
+            raise HTTPException(500, str(e))
 
     docx_bytes = generar_docx(informe)
     nombre = informe["proveedor"]["nombre"] or rut
