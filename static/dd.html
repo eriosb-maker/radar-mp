@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Due Diligence — Contratistas MP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    body { display: block; }
+
+    .dd-wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 32px;
+    }
+
+    /* Search bar */
+    .search-hero {
+      text-align: center;
+      padding: 48px 0 36px;
+    }
+    .search-hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      color: var(--pearl);
+      margin-bottom: 6px;
+    }
+    .search-hero p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .search-bar input {
+      flex: 1;
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      color: var(--pearl);
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      outline: none;
+      letter-spacing: .5px;
+    }
+    .search-bar input:focus { border-color: var(--champagne); }
+    .search-bar button {
+      background: var(--champagne);
+      color: #0d1117;
+      border: none;
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .search-bar button:hover { background: var(--champagne-l); }
+    .search-bar button:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Estado del proceso */
+    .progress-steps {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 32px;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-muted);
+      min-width: 120px;
+      position: relative;
+    }
+    .step::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: calc(50% + 16px);
+      width: calc(100% - 32px);
+      height: 1px;
+      background: var(--navy-border);
+    }
+    .step:last-child::after { display: none; }
+    .step-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--navy-border);
+      background: var(--navy-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      z-index: 1;
+    }
+    .step.active   .step-dot { border-color: var(--champagne); color: var(--champagne); }
+    .step.done     .step-dot { border-color: #50c878; background: rgba(80,200,120,.15); color: #50c878; }
+    .step.active   { color: var(--champagne); }
+    .step.done     { color: #50c878; }
+
+    /* Resultado */
+    .result { display: none; }
+    .result.visible { display: block; }
+
+    /* Cabecera del informe */
+    .report-header {
+      background: var(--navy);
+      border: 1px solid var(--navy-border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .report-nombre {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      color: var(--pearl);
+    }
+    .report-rut {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .riesgo-badge {
+      padding: 8px 24px;
+      border-radius: 24px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: .5px;
+    }
+    .riesgo-ALTO  { background: rgba(192,57,43,.2);  color: #e74c3c; border: 2px solid #e74c3c; }
+    .riesgo-MEDIO { background: rgba(230,126,34,.2); color: #e67e22; border: 2px solid #e67e22; }
+    .riesgo-BAJO  { background: rgba(39,174,96,.2);  color: #2ecc71; border: 2px solid #2ecc71; }
+
+    /* Grid de KPIs */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); margin-bottom: 6px; }
+    .kpi-value { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: var(--pearl); }
+    .kpi-value.accent { color: var(--champagne); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--navy-border);
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all .15s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--champagne); border-bottom-color: var(--champagne); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Tabla estilo informe */
+    .table-informe {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .table-informe th {
+      background: var(--navy);
+      color: var(--champagne);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 2px solid var(--navy-border);
+    }
+    .table-informe td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--navy-border);
+      color: var(--text);
+    }
+    .table-informe tbody tr:hover { background: rgba(255,255,255,.02); }
+
+    /* Barra de porcentaje */
+    .bar-row { margin-bottom: 10px; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .bar-bg { background: var(--navy-border); border-radius: 4px; height: 8px; }
+    .bar-fill { background: var(--champagne); height: 8px; border-radius: 4px; transition: width .5s; }
+
+    /* Red flags */
+    .flag-card {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+    }
+    .flag-ALTO  { background: rgba(192,57,43,.1);  border: 1px solid rgba(192,57,43,.4); }
+    .flag-MEDIO { background: rgba(230,126,34,.1); border: 1px solid rgba(230,126,34,.4); }
+    .flag-BAJO  { background: rgba(39,174,96,.1);  border: 1px solid rgba(39,174,96,.3); }
+    .flag-titulo {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .flag-ALTO  .flag-titulo { color: #e74c3c; }
+    .flag-MEDIO .flag-titulo { color: #e67e22; }
+    .flag-BAJO  .flag-titulo { color: #2ecc71; }
+    .flag-detalle { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .flag-valor { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+
+    /* IA análisis */
+    .ia-content {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      line-height: 1.8;
+      font-size: 13.5px;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .ia-content strong { color: var(--pearl); font-weight: 600; }
+
+    /* Botón descarga */
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid var(--champagne);
+      color: var(--champagne);
+      padding: 10px 22px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      text-decoration: none;
+    }
+    .btn-download:hover { background: rgba(200,169,81,.1); }
+
+    /* Loader */
+    .loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 0;
+      gap: 16px;
+      color: var(--text-muted);
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--navy-border);
+      border-top-color: var(--champagne);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Breadcrumb nav */
+    .topnav {
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--navy-border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .topnav a { color: var(--text-muted); font-size: 13px; }
+    .topnav a:hover { color: var(--champagne); }
+    .topnav span { color: var(--navy-border); }
+    .topnav strong { color: var(--pearl); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="/">← Radar MP</a>
+  <span>/</span>
+  <strong>Due Diligence de Contratistas</strong>
+</nav>
+
+<div class="dd-wrap">
+
+  <!-- Hero de búsqueda -->
+  <div class="search-hero">
+    <h1>Due Diligence</h1>
+    <p>Ingresa el RUT de cualquier empresa o persona para obtener su perfil completo de contratación pública y análisis de riesgo.</p>
+    <div class="search-bar">
+      <input type="text" id="input-rut" placeholder="Ej: 76.543.210-K" maxlength="12" />
+      <button id="btn-buscar">Analizar</button>
+    </div>
+    <div id="error-msg" style="color:#e74c3c;font-size:12px;margin-top:10px;display:none;"></div>
+  </div>
+
+  <!-- Pasos del proceso -->
+  <div class="progress-steps" id="steps" style="display:none">
+    <div class="step" id="step-1"><div class="step-dot">1</div><span>Identificar</span></div>
+    <div class="step" id="step-2"><div class="step-dot">2</div><span>Historial</span></div>
+    <div class="step" id="step-3"><div class="step-dot">3</div><span>Métricas</span></div>
+    <div class="step" id="step-4"><div class="step-dot">4</div><span>Análisis IA</span></div>
+  </div>
+
+  <!-- Loader -->
+  <div id="loader" class="loader" style="display:none">
+    <div class="spinner"></div>
+    <div id="loader-msg">Buscando en Mercado Público…</div>
+  </div>
+
+  <!-- Resultado -->
+  <div id="result" class="result">
+
+    <div class="report-header">
+      <div>
+        <div class="report-nombre" id="r-nombre">—</div>
+        <div class="report-rut" id="r-rut">—</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="riesgo-badge" id="r-riesgo">—</div>
+        <button class="btn-download" id="btn-docx">⬇ Descargar DOCX</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total adjudicado</div>
+        <div class="kpi-value accent" id="kpi-total">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Contratos</div>
+        <div class="kpi-value" id="kpi-contratos">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Promedio contrato</div>
+        <div class="kpi-value" id="kpi-promedio">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Organismos compradores</div>
+        <div class="kpi-value" id="kpi-organismos">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Alertas detectadas</div>
+        <div class="kpi-value" id="kpi-flags">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">HHI concentración</div>
+        <div class="kpi-value" id="kpi-hhi">—</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="organismos">Organismos compradores</div>
+      <div class="tab" data-tab="evolucion">Evolución anual</div>
+      <div class="tab" data-tab="flags">Alertas</div>
+      <div class="tab" data-tab="ia">Análisis IA</div>
+      <div class="tab" data-tab="contratos">Últimos contratos</div>
+    </div>
+
+    <!-- Tab: Organismos -->
+    <div id="tab-organismos" class="tab-content active">
+      <div id="org-bars"></div>
+      <table class="table-informe" id="tabla-organismos">
+        <thead><tr>
+          <th>Organismo</th>
+          <th>Monto total</th>
+          <th>Contratos</th>
+          <th>% del total</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Tab: Evolución -->
+    <div id="tab-evolucion" class="tab-content">
+      <table class="table-informe" id="tabla-anio">
+        <thead><tr>
+          <th>Año</th>
+          <th>Monto adjudicado</th>
+          <th>N° contratos</th>
+          <th>Variación YoY</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Tab: Alertas -->
+    <div id="tab-flags" class="tab-content">
+      <div id="flags-list"></div>
+    </div>
+
+    <!-- Tab: Análisis IA -->
+    <div id="tab-ia" class="tab-content">
+      <div class="ia-content" id="ia-text"></div>
+    </div>
+
+    <!-- Tab: Contratos -->
+    <div id="tab-contratos" class="tab-content">
+      <table class="table-informe" id="tabla-contratos">
+        <thead><tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Organismo</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+          <th>Tipo</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </div><!-- /result -->
+</div><!-- /dd-wrap -->
+
+<script src="/static/dd.js"></script>
+</body>
+</html>

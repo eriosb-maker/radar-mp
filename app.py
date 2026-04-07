@@ -14,10 +14,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from fastapi.responses import Response
+
 from config import POLL_INTERVAL_MINUTOS
 from database import Licitacion, Oportunidad, Proveedor, get_db, init_db
+from due_diligence import due_diligence_completo
 from ingesta import ciclo_completo
 from notifier import enviar_alertas
+from report_dd import generar_docx
 
 logging.basicConfig(
     level=logging.INFO,
@@ -320,6 +324,52 @@ async def enriquecer_licitaciones(limite: int = 50, db: Session = Depends(get_db
             log.warning("Enriquecimiento %s: %s", lic.id, e)
     db.commit()
     return {"enriquecidas": enriquecidas, "total_sin_detalle": len(sin_detalle)}
+
+
+# ------------------------------------------------------------------ #
+# Rutas — Due Diligence
+# ------------------------------------------------------------------ #
+
+@app.get("/dd", include_in_schema=False)
+async def dd_page():
+    return FileResponse("static/dd.html")
+
+
+@app.get("/api/dd/{rut}")
+async def due_diligence_json(rut: str):
+    """
+    Genera el informe de due diligence completo para un RUT.
+    Puede tardar 30-60 segundos (descarga datos + análisis Claude).
+    """
+    try:
+        informe = await due_diligence_completo(rut)
+        return informe
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        log.error("Error en DD para %s: %s", rut, e)
+        raise HTTPException(500, f"Error generando informe: {e}")
+
+
+@app.get("/api/dd/{rut}/docx")
+async def due_diligence_docx(rut: str):
+    """Genera y descarga el informe en formato DOCX."""
+    try:
+        informe = await due_diligence_completo(rut)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+    docx_bytes = generar_docx(informe)
+    nombre = informe["proveedor"]["nombre"] or rut
+    nombre_archivo = f"DD_{nombre.replace(' ', '_')[:40]}.docx"
+
+    return Response(
+        content     = docx_bytes,
+        media_type  = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers     = {"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
 
 
 if __name__ == "__main__":
