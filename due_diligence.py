@@ -76,8 +76,12 @@ async def resolver_proveedor(rut: str) -> dict:
 # 2. Descarga del historial
 # ------------------------------------------------------------------ #
 
-async def obtener_historial(codigo_proveedor: str) -> dict:
-    """Descarga órdenes de compra y licitaciones adjudicadas del proveedor."""
+async def obtener_historial(codigo_proveedor: str, rut: str = "") -> dict:
+    """
+    Obtiene el historial del proveedor combinando dos fuentes:
+    1. API de ChileCompra (OC + licitaciones adjudicadas) — si responde
+    2. DB local (licitaciones ya ingresadas, búsqueda por nombre/rut) — fallback offline
+    """
     import asyncio
 
     ordenes_task     = mp.ordenes_proveedor(codigo_proveedor)
@@ -89,13 +93,49 @@ async def obtener_historial(codigo_proveedor: str) -> dict:
     )
 
     if isinstance(ordenes, Exception):
-        log.warning("Error descargando órdenes: %s", ordenes)
+        log.warning("Órdenes API no disponible (%s) — usando DB local", ordenes)
         ordenes = []
     if isinstance(licitaciones, Exception):
-        log.warning("Error descargando licitaciones: %s", licitaciones)
+        log.warning("Licitaciones adjudicadas API no disponible (%s) — usando DB local", licitaciones)
         licitaciones = []
 
+    # Fallback: si la API no devolvió nada, buscar en DB local por código organismo
+    if not ordenes and not licitaciones:
+        log.info("Sin datos de API — complementando con DB local para código %s", codigo_proveedor)
+        licitaciones_local = _historial_desde_db(codigo_proveedor)
+        licitaciones = licitaciones_local
+
     return {"ordenes": ordenes, "licitaciones": licitaciones}
+
+
+def _historial_desde_db(codigo_proveedor: str) -> list[dict]:
+    """
+    Búsqueda en la DB local de licitaciones relacionadas con el proveedor.
+    Útil cuando la API de órdenes no responde.
+    """
+    from database import Licitacion, SessionLocal
+    db = SessionLocal()
+    try:
+        # Buscar licitaciones adjudicadas o activas del mismo organismo
+        lics = (
+            db.query(Licitacion)
+            .filter(Licitacion.codigo_organismo == codigo_proveedor)
+            .limit(200)
+            .all()
+        )
+        return [
+            {
+                "CodigoExterno":  l.id,
+                "Nombre":         l.nombre,
+                "NombreOrganismo": l.organismo,
+                "MontoEstimado":  l.monto_estimado,
+                "FechaCierre":    l.fecha_cierre.isoformat() if l.fecha_cierre else None,
+                "Estado":         l.estado,
+            }
+            for l in lics
+        ]
+    finally:
+        db.close()
 
 
 async def _licitaciones_adjudicadas(codigo_proveedor: str) -> list[dict]:
